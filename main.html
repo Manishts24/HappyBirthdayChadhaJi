@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy Birthday Game</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --secondary: #f43f5e;
+      --success: #10b981;
+      --background: #f8fafc;
+      --text: #1e293b;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .container {
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .level {
+      display: none;
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    .level.active {
+      display: block;
+    }
+    
+    .game-area {
+      min-height: 200px;
+      margin: 2rem 0;
+      padding: 1rem;
+      border-radius: 8px;
+      background-color: rgba(79, 70, 229, 0.05);
+      position: relative;
+    }
+    
+    .level-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    
+    .level-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #d1d5db;
+    }
+    
+    .level-dot.active {
+      background-color: var(--primary);
+    }
+    
+    .message {
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      background-color: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      font-weight: bold;
+      display: none;
+    }
+    
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+    }
+    
+    button:disabled {
+      background-color: #d1d5db;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .target {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: var(--secondary);
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    
+    .target:hover {
+      transform: scale(1.1);
+    }
+    
+    .balloon-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+    }
+    
+    .balloon {
+      width: 60px;
+      height: 80px;
+      background-color: var(--primary);
+      border-radius: 50%;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .balloon:nth-child(2n) {
+      background-color: var(--secondary);
+    }
+    
+    .balloon:nth-child(3n) {
+      background-color: var(--success);
+    }
+    
+    .balloon::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 20px;
+      background-color: #64748b;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .balloon.popped {
+      transform: scale(0);
+      opacity: 0;
+    }
+    
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 0 auto;
+      max-width: 300px;
+    }
+    
+    .memory-card {
+      aspect-ratio: 1;
+      background-color: var(--primary);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5rem;
+      color: white;
+      transition: all 0.3s ease;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    
+    .memory-card .front,
+    .memory-card .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 6px;
+    }
+    
+    .memory-card .front {
+      background-color: var(--primary);
+    }
+    
+    .memory-card .back {
+      background-color: white;
+      color: var(--text);
+      transform: rotateY(180deg);
+    }
+    
+    .memory-card.flipped {
+      transform: rotateY(180deg);
+    }
+    
+    .memory-card.matched {
+      background-color: var(--success);
+      transform: rotateY(180deg);
+    }
+    
+    .fireworks {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+    }
+    
+    .firework {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      animation: explode 1s ease-out forwards;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes explode {
+      0% {
+        transform: translate(0, 0);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty));
+        opacity: 0;
+      }
+    }
+    
+    .final-message {
+      display: none;
+      animation: fadeIn 1s ease-in;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Happy Birthday Jai!</h1>
+    <div class="level-indicator">
+      <div class="level-dot active"></div>
+      <div class="level-dot"></div>
+      <div class="level-dot"></div>
+    </div>
+    
+    <!-- Level 1 -->
+    <div class="level active" id="level1">
+      <h2>Level 1: Catch the Birthday Star</h2>
+      <p>Click on the star 5 times before it moves!</p>
+      <div class="game-area" id="game-area-1">
+        <div class="target" id="target">⭐</div>
+      </div>
+      <div class="message" id="message1">
+        I wanted to do something for you 20<sup>th</sup>, I know this a bit cringe, but atleast you are playing XD.
+      </div>
+    </div>
+    
+    <!-- Level 2 -->
+    <div class="level" id="level2">
+      <h2>Level 2: Pop the Balloons</h2>
+      <p>Pop all the birthday balloons!</p>
+      <div class="game-area" id="game-area-2">
+        <div class="balloon-container" id="balloon-container"></div>
+      </div>
+      <div class="message" id="message2">
+        Jai, I swear I cherrish all the time I spent with you, you are a really nice guy at heart! 
+      </div>
+    </div>
+    
+    <!-- Level 3 -->
+    <div class="level" id="level3">
+      <h2>Level 3: Memory Match</h2>
+      <p>Find all matching pairs!</p>
+      <div class="game-area" id="game-area-3">
+        <div class="memory-grid" id="memory-grid"></div>
+      </div>
+      <div class="message" id="message3">
+        I know you are going through a very rough patch, and I want to be there with you through it all, I understand you SUCK at communication but the good thing is I don't and I will keep liking you until you hate me XD.
+      </div>
+    </div>
+    
+    <!-- Final Screen -->
+    <div class="final-message" id="final-message">
+      <h2>Congratulations!</h2>
+      <p>You've completed all levels!</p>
+      <h3>Happy Birthday to the most amazing guy I know!</h3>
+      <p>May your day be filled with as much fun, joy, and happiness as you bring to me. Damnn!? you actually reached till here? expected you wouldn't lol.</p>
+      <button id="replay-button">Play Again?</button>
+    </div>
+    
+    <button id="next-level-button" disabled>Loading...</button>
+  </div>
+  
+  <div class="fireworks" id="fireworks"></div>
+  
+  <script>
+    // Game state
+    let currentLevel = 1;
+    let clickCount = 0;
+    let balloonsPopped = 0;
+    let totalBalloons = 6;
+    let matchesMade = 0;
+    let totalMatches = 4;
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    
+    // DOM Elements
+    const nextLevelButton = document.getElementById('next-level-button');
+    const targetElem = document.getElementById('target');
+    const balloonContainer = document.getElementById('balloon-container');
+    const memoryGrid = document.getElementById('memory-grid');
+    const replayButton = document.getElementById('replay-button');
+    const fireworksContainer = document.getElementById('fireworks');
+    
+    // Initialize game
+    function initGame() {
+      // Set up Level 1
+      positionTarget();
+      targetElem.addEventListener('click', handleTargetClick);
+      
+      // Enable button
+      nextLevelButton.disabled = false;
+      nextLevelButton.style.display = 'none'; // Hide the button initially
+      nextLevelButton.addEventListener('click', handleNextLevel);
+      
+      // Set up replay button
+      replayButton.addEventListener('click', resetGame);
+    }
+    
+    // Level 1 - Moving Target
+    function positionTarget() {
+      const gameArea = document.getElementById('game-area-1');
+      const maxX = gameArea.clientWidth - 50;
+      const maxY = gameArea.clientHeight - 50;
+      
+      targetElem.style.left = `${Math.random() * maxX}px`;
+      targetElem.style.top = `${Math.random() * maxY}px`;
+    }
+    
+    function handleTargetClick() {
+      clickCount++;
+      
+      // Move the target after each click
+      positionTarget();
+      
+      if (clickCount >= 5) {
+        // Level complete
+        document.getElementById('message1').style.display = 'block';
+        nextLevelButton.style.display = 'block';
+        nextLevelButton.textContent = 'Go to Level 2';
+        nextLevelButton.onclick = () => goToLevel(2);
+      }
+    }
+    
+    // Level 2 - Balloon Pop
+    function setupBalloons() {
+      balloonContainer.innerHTML = '';
+      
+      for (let i = 0; i < totalBalloons; i++) {
+        const balloon = document.createElement('div');
+        balloon.classList.add('balloon');
+        balloon.addEventListener('click', () => popBalloon(balloon));
+        balloonContainer.appendChild(balloon);
+      }
+    }
+    
+    function popBalloon(balloon) {
+      if (!balloon.classList.contains('popped')) {
+        balloon.classList.add('popped');
+        balloonsPopped++;
+        
+        if (balloonsPopped >= totalBalloons) {
+          // Level complete
+          document.getElementById('message2').style.display = 'block';
+          nextLevelButton.style.display = 'block';
+          nextLevelButton.textContent = 'Go to Level 3';
+          nextLevelButton.onclick = () => goToLevel(3);
+        }
+      }
+    }
+    
+    // Level 3 - Memory Match
+    function setupMemoryGame() {
+      memoryGrid.innerHTML = '';
+      
+      const emojis = ['🎂', '🎂', '🎁', '🎁', '🎈', '🎈', '🎉', '🎉'];
+      const shuffledEmojis = shuffleArray([...emojis]);
+      
+      shuffledEmojis.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.classList.add('memory-card');
+        card.dataset.value = emoji;
+        
+        const front = document.createElement('div');
+        front.classList.add('front');
+        front.textContent = '?';
+        
+        const back = document.createElement('div');
+        back.classList.add('back');
+        back.textContent = emoji;
+        
+        card.appendChild(front);
+        card.appendChild(back);
+        card.addEventListener('click', () => flipCard(card));
+        memoryGrid.appendChild(card);
+      });
+    }
+    
+    function flipCard(card) {
+      if (lockBoard) return;
+      if (card === firstCard) return;
+      if (card.classList.contains('matched')) return;
+      
+      card.classList.add('flipped');
+      
+      if (!firstCard) {
+        firstCard = card;
+        return;
+      }
+      
+      secondCard = card;
+      checkForMatch();
+    }
+    
+    function checkForMatch() {
+      const isMatch = firstCard.dataset.value === secondCard.dataset.value;
+      
+      if (isMatch) {
+        disableCards();
+        matchesMade++;
+        
+        if (matchesMade >= totalMatches) {
+          // Level complete
+          setTimeout(() => {
+            document.getElementById('message3').style.display = 'block';
+            nextLevelButton.style.display = 'block';
+            nextLevelButton.textContent = 'Finish';
+            nextLevelButton.onclick = showFinalMessage;
+          }, 1000);
+        }
+      } else {
+        unflipCards();
+      }
+    }
+    
+    function disableCards() {
+      firstCard.classList.add('matched');
+      secondCard.classList.add('matched');
+      
+      resetBoard();
+    }
+    
+    function unflipCards() {
+      lockBoard = true;
+      
+      setTimeout(() => {
+        firstCard.classList.remove('flipped');
+        secondCard.classList.remove('flipped');
+        
+        resetBoard();
+      }, 1000);
+    }
+    
+    function resetBoard() {
+      [firstCard, secondCard] = [null, null];
+      lockBoard = false;
+    }
+    
+    // Helper function to shuffle array
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    
+    // Navigation between levels
+    function goToLevel(level) {
+      // Hide all levels
+      document.querySelectorAll('.level').forEach(elem => {
+        elem.classList.remove('active');
+      });
+      
+      // Update level dots
+      document.querySelectorAll('.level-dot').forEach((dot, index) => {
+        dot.classList.toggle('active', index + 1 <= level);
+      });
+      
+      // Show current level
+      document.getElementById(`level${level}`).classList.add('active');
+      
+      // Update current level
+      currentLevel = level;
+      
+      // Hide the button until level is completed
+      nextLevelButton.style.display = 'none';
+      
+      // Set up the new level
+      if (level === 2) {
+        setupBalloons();
+      } else if (level === 3) {
+        setupMemoryGame();
+      }
+    }
+    
+    function handleNextLevel() {
+      // This function is now just a placeholder
+      // We will only show navigation buttons after completing levels
+    }
+    
+    function showFinalMessage() {
+      // Hide all levels
+      document.querySelectorAll('.level').forEach(elem => {
+        elem.classList.remove('active');
+      });
+      
+      // Show final message
+      document.getElementById('final-message').style.display = 'block';
+      nextLevelButton.style.display = 'none';
+      
+      // Show fireworks
+      createFireworks();
+    }
+    
+    function createFireworks() {
+      fireworksContainer.style.display = 'block';
+      
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          createFirework();
+        }, i * 200);
+      }
+    }
+    
+    function createFirework() {
+      const colors = ['#f43f5e', '#4f46e5', '#10b981', '#f59e0b', '#8b5cf6'];
+      
+      const firework = document.createElement('div');
+      firework.classList.add('firework');
+      
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight;
+      
+      firework.style.left = `${x}px`;
+      firework.style.top = `${y}px`;
+      firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      fireworksContainer.appendChild(firework);
+      
+      // Create explosion particles
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('firework');
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Random direction
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 50 + Math.random() * 100;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        fireworksContainer.appendChild(particle);
+        
+        setTimeout(() => {
+          particle.remove();
+        }, 1000);
+      }
+      
+      setTimeout(() => {
+        firework.remove();
+      }, 1000);
+    }
+    
+    function resetGame() {
+      // Reset variables
+      currentLevel = 1;
+      clickCount = 0;
+      balloonsPopped = 0;
+      matchesMade = 0;
+      
+      // Hide all messages
+      document.querySelectorAll('.message').forEach(elem => {
+        elem.style.display = 'none';
+      });
+      
+      // Hide final message
+      document.getElementById('final-message').style.display = 'none';
+      
+      // Reset button
+      nextLevelButton.style.display = 'none';
+      
+      // Hide fireworks
+      fireworksContainer.style.display = 'none';
+      fireworksContainer.innerHTML = '';
+      
+      // Go back to level 1
+      goToLevel(1);
+    }
+    
+    // Initialize game when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initGame);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (currentLevel === 1) {
+        positionTarget();
+      }
+    });
+  </script>
+</body>
+</html>
